@@ -121,7 +121,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  //LED_Blink(1000,1000);
+	  LED_Blink(1000,1000);
 	  HAL_ADC_Start(&hadc1);
 	  HAL_Delay(1000);
 	  //HAL_ADC_Start_DMA(&hadc1,(uint32_t*)&adc_read,1);
