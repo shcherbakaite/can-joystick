@@ -1,0 +1,88 @@
+\documentclass[letterpaper]{article}
+\usepackage{noweb}
+\usepackage{lmodern}
+\usepackage{geometry}
+\usepackage{siunitx}
+\usepackage[nottoc]{tocbibind}
+\usepackage[colorlinks]{hyperref}
+\begin{document}
+
+
+
+\title{CAN Joystick Firmware}
+\author{Firefly Automatix, Vlad Shcherbakov}
+\date{\today}
+\maketitle
+
+
+
+\begin{abstract}
+
+This article is a literate program describing complete firmware for an {\it Analog-To-CAN joystick module} based on [[STM32H7]] microcontroller. This article is also the source code from which all [[*.c]] and [[*.h]] files are generated. 
+
+\end{abstract}
+
+
+
+\tableofcontents
+
+
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{\medskipamount}
+
+
+
+\section{Introduction}
+
+The main way to get joystick analog readings is through the [[joystick_t]] struct. Its main function is to hold analog readings coming from DMA (Direct Memory Access) transfers. All ADC channels are measured through resistor dividers. This is needed due to limitation of ADC voltage level to \SI{3.3}{\volt}
+
+<<joystick.h>>=
+struct joystick_t {
+@
+
+Analog peripheral handle --- a pointer to [[ADC_HandleTypeDef]]. File [[joystick.h]] is not responsible for setting up the ADC peripheral! The code initializing [[joystick_t]] struct is responsible for configuring the ADC with correct number of channels, bitness, etc...
+
+<<joystick.h>>=
+	ADC_HandleTypeDef* hadc;
+@
+
+Raw value of joystick [[channel 1]] copied from DMA buffer. This ADC value is measured through a dedicated resistor divider network. 
+
+<<joystick.h>>=
+	// Joystick channel 1
+	uint32_t channel1_se;
+@
+
+Raw value of joystick [[channel 2]] copied from DMA buffer. This ADC value is measured through a dedicated resistor divider network.
+
+<<joystick.h>>=
+	// Joystick channel 2
+	uint32_t channel2_se;
+    
+@
+
+This is a special ADC channel used for calibration of all resistor divider networks used elsewhere. The final gain of resitor dividers is subject to variation, but it is assumed, at very least, that all resistors used on the same PCB have roughly identical values. This special channel is used to measure the gain (attenuation) of one resistor divider so that we can later undo this attenuation and recover actual voltage before attenuation accurately.
+
+<<joystick.h>>=
+	// Divider calibration channel
+	uint32_t divider_calibration_se;
+@
+
+Both joystick channels output voltage relative to [[VCC]] level and there's no internal regulator. With $V_{max} = 90\% \times VCC $ and $V_{min} = 10\% \times VCC $, therefore it is neccessery to know the exact [[VCC]] voltage level to be able to calcualte throttle positions of both channels.
+<<joystick.h>>=
+	// 5V level measurement
+	uint32_t 5v_level_se;
+@
+<<joystick.h>>=
+	// DMA buffer
+	uint16_t adcResultsDMA [JOYSTICK_ADC_CHANNEL_N];
+};
+
+@ %def joystick_t
+
+All channels are read at the same time with 
+
+@
+
+\end{document}
