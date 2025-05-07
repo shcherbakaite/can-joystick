@@ -14,16 +14,17 @@ extern uint32_t adc1_conversion_complete_flag;
 struct joystick_t joystick_new(ADC_HandleTypeDef* hadc) {
 	struct joystick_t joystick = {
 		hadc,
-		0,       // channel1_se
-		0,       // channel2_se
-		0,       // divider_calibration_se
+		0,       // channel1_se, mA
+		0,       // channel2_se, mA
+		0,       // divider_calibration_se, mA
+		5000,    // vcc_level_se, mA
 		{0,0,0}, // adcResultsDMA
 	};
 	return joystick;
 }
 
 int joystick_read(struct joystick_t* joystick) {
-	HAL_ADC_Start_DMA(joystick->hadc, (uint32_t*)joystick->adcResultsDMA, JOYSTICK_ADC_CHANNEL_N);
+	HAL_ADC_Start_DMA(joystick->hadc, (uint32_t*)joystick->adcResultsDMA, JOYSTICK_DMA_CHANNEL_COUNT);
 	while(adc1_conversion_complete_flag == 0) {} // wait for conversion
 	adc1_conversion_complete_flag = 0;           // reset flag
 	HAL_ADC_Stop_DMA(joystick->hadc);
@@ -37,31 +38,34 @@ int joystick_read(struct joystick_t* joystick) {
 	return 0;
 }
 
-uint16_t adc_value_to_millivolts_16bit(uint16_t adc_value, double scale) {
-	//uint adc_full_scale = pow(2,16) - 1;
+uint16_t adc_value_to_mV_16bit(uint16_t adc_value, double scale) {
 	double vin_f = scale*VREF*((double)adc_value)/ADC_FULL_SCALE_16BIT;
 	uint16_t vin = (uint32_t)round((vin_f*1000.0));
 	return vin;
 }
 
-uint16_t joystick_get_sensor1_SE(struct joystick_t* joystick) {
+uint16_t joystick_get_sensor1_mV(struct joystick_t* joystick) {
 	double divider_Av = joystick_get_divider_Av(joystick);
-	return adc_value_to_millivolts_16bit(joystick->channel1_se, 1.0/divider_Av);
+	return adc_value_to_mV_16bit(joystick->channel1_se, 1.0/divider_Av);
 }
 
-uint16_t joystick_get_sensor2_SE(struct joystick_t* joystick) {
+uint16_t joystick_get_sensor2_mV(struct joystick_t* joystick) {
 	double divider_Av = joystick_get_divider_Av(joystick);
-	return adc_value_to_millivolts_16bit(joystick->channel2_se, 1.0/divider_Av);
+	return adc_value_to_mV_16bit(joystick->channel2_se, 1.0/divider_Av);
 }
 
-int16_t joystick_get_throttle1(struct joystick_t* joystick) {
-	int16_t sensor1 = joystick_get_sensor1_SE(joystick);
+int16_t joystick_get_throttle1_permille(struct joystick_t* joystick) {
+	int16_t sensor1 = joystick_get_sensor1_mV(joystick);
 	return (uint16_t)(1000*(sensor1 - 500)/(4500 - 500));
 }
 
-int16_t joystick_get_throttle2(struct joystick_t* joystick) {
-	int16_t sensor2 = joystick_get_sensor2_SE(joystick);
+int16_t joystick_get_throttle2_permille(struct joystick_t* joystick) {
+	int16_t sensor2 = joystick_get_sensor2_mV(joystick);
 	return 1000*((-sensor2 + 5000) - 500)/(4500 - 500);
+}
+
+void joystick_get_limits(struct joystick_t* joystick, uint16_t* upper, uint16_t* lower) {
+
 }
 
 double joystick_get_divider_Av(struct joystick_t* joystick) {

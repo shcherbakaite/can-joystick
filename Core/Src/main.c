@@ -171,8 +171,8 @@ int main(void)
 
 	  joystick_read(&joy);
 
-	  adc_read = joystick_get_sensor1_SE(&joy);
-	  printf("ADC out: %u, %u, %i, %i\r\n", joystick_get_sensor1_SE(&joy), joystick_get_sensor2_SE(&joy), joystick_get_throttle1(&joy), joystick_get_throttle2(&joy));
+	  adc_read = joystick_get_sensor1_mV(&joy);
+	  printf("ADC out: %u, %u, %i, %i\r\n", joystick_get_sensor1_mV(&joy), joystick_get_sensor2_mV(&joy), joystick_get_throttle1_permille(&joy), joystick_get_throttle2_permille(&joy));
 //
 //	  //HAL_ADC_Start_DMA(&hadc1,(uint32_t*)&adc_read,1);
 //	  if (HAL_ADC_PollForConversion(&hadc1, 10) == 0) {
