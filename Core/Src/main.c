@@ -35,6 +35,8 @@
 /* USER CODE BEGIN PD */
 #define BAUD_RATE_125 8
 #define BAUD_RATE_250 4
+#define BAUD_RATE_500 2
+#define BAUD_RATE_1000 1
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -151,7 +153,7 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   uint32_t ctr = 0;
-  uint32_t adc_read = 0;
+  uint16_t adc_read = 0;
 
   struct joystick_t joy = joystick_new(&hadc1);
 
@@ -163,14 +165,14 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  LED_Blink(100,100);
+	  //LED_Blink(100,100);
 	  // HAL_ADC_Start(&hadc1);
 	  HAL_Delay(100);
 
 	  joystick_read(&joy);
 
 	  adc_read = joystick_get_sensor1_SE(&joy);
-	  printf("ADC out: %u, %u\r\n", joystick_get_sensor1_SE(&joy), joystick_get_sensor2_SE(&joy));
+	  printf("ADC out: %u, %u, %i, %i\r\n", joystick_get_sensor1_SE(&joy), joystick_get_sensor2_SE(&joy), joystick_get_throttle1(&joy), joystick_get_throttle2(&joy));
 //
 //	  //HAL_ADC_Start_DMA(&hadc1,(uint32_t*)&adc_read,1);
 //	  if (HAL_ADC_PollForConversion(&hadc1, 10) == 0) {
@@ -181,12 +183,12 @@ int main(void)
 //	  HAL_ADC_Stop(&hadc1);
 //	  //printf();
 
-	  memcpy(TxData, &adc_read, 4);
+	  memcpy(TxData, &adc_read, 2);
 	  /* Start the Transmission process */
 	  if (HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &TxHeader, TxData) != HAL_OK)
 	  {
 	      /* Transmission request Error */
-		  //Error_Handler();
+		  Error_Handler();
 	  }
 	  //uint8_t b = 0x01;
 	  //HAL_UART_Transmit(&huart2, (uint8_t *) "TEST\n", 5, HAL_MAX_DELAY);
@@ -282,15 +284,18 @@ static void MX_ADC1_Init(void)
   hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   hadc1.Init.LowPowerAutoWait = DISABLE;
   hadc1.Init.ContinuousConvMode = DISABLE;
-  hadc1.Init.NbrOfConversion = 2;
+  hadc1.Init.NbrOfConversion = 3;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc1.Init.ConversionDataManagement = ADC_CONVERSIONDATA_DMA_ONESHOT;
   hadc1.Init.Overrun = ADC_OVR_DATA_PRESERVED;
   hadc1.Init.LeftBitShift = ADC_LEFTBITSHIFT_NONE;
-  hadc1.Init.OversamplingMode = DISABLE;
-  hadc1.Init.Oversampling.Ratio = 1;
+  hadc1.Init.OversamplingMode = ENABLE;
+  hadc1.Init.Oversampling.Ratio = 1024;
+  hadc1.Init.Oversampling.RightBitShift = ADC_RIGHTBITSHIFT_10;
+  hadc1.Init.Oversampling.TriggeredMode = ADC_TRIGGEREDMODE_SINGLE_TRIGGER;
+  hadc1.Init.Oversampling.OversamplingStopReset = ADC_REGOVERSAMPLING_CONTINUED_MODE;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
   {
     Error_Handler();
@@ -308,7 +313,7 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_3;
   sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
+  sConfig.SamplingTime = ADC_SAMPLETIME_8CYCLES_5;
   sConfig.SingleDiff = ADC_SINGLE_ENDED;
   sConfig.OffsetNumber = ADC_OFFSET_NONE;
   sConfig.Offset = 0;
@@ -322,6 +327,15 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_4;
   sConfig.Rank = ADC_REGULAR_RANK_2;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Regular Channel
+  */
+  sConfig.Channel = ADC_CHANNEL_5;
+  sConfig.Rank = ADC_REGULAR_RANK_3;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -353,7 +367,7 @@ static void MX_FDCAN1_Init(void)
   hfdcan1.Init.AutoRetransmission = DISABLE;
   hfdcan1.Init.TransmitPause = DISABLE;
   hfdcan1.Init.ProtocolException = DISABLE;
-  hfdcan1.Init.NominalPrescaler = 4;
+  hfdcan1.Init.NominalPrescaler = 2;
   hfdcan1.Init.NominalSyncJumpWidth = 1;
   hfdcan1.Init.NominalTimeSeg1 = 7;
   hfdcan1.Init.NominalTimeSeg2 = 2;
@@ -381,7 +395,7 @@ static void MX_FDCAN1_Init(void)
   }
   /* USER CODE BEGIN FDCAN1_Init 2 */
   // Set the baud rate using pre-scaler
-  hfdcan1.Init.NominalPrescaler = BAUD_RATE_250;
+  //hfdcan1.Init.NominalPrescaler = BAUD_RATE_500;
   /* USER CODE END FDCAN1_Init 2 */
 
 }
@@ -467,6 +481,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_RESET);
