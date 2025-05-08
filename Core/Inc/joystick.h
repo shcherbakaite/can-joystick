@@ -27,7 +27,7 @@
 
 struct joystick_t;
 
-#define JOYSTICK_DMA_CHANNEL_COUNT 3
+#define JOYSTICK_DMA_CHANNEL_COUNT 4
 
 struct joystick_t {
 	ADC_HandleTypeDef* hadc;
@@ -58,8 +58,10 @@ uint16_t adc_value_to_mV_16bit(uint16_t adc_value, double scale);
 int joystick_read(struct joystick_t* joystick);
 uint16_t joystick_get_sensor1_mV(struct joystick_t* joystick);
 uint16_t joystick_get_sensor2_mV(struct joystick_t* joystick);
+uint16_t joystick_get_vcc_mV(struct joystick_t* joystick);
 int16_t joystick_get_throttle1_permille(struct joystick_t* joystick);
 int16_t joystick_get_throttle2_permille(struct joystick_t* joystick);
+void joystick_get_limits_mV(struct joystick_t* joystick, uint16_t* upper, uint16_t* lower);
 double joystick_get_divider_Av(struct joystick_t* joystick);
 
 //uint32_t joystick_get_sensors_DM(struct joystick_t* joystick);
