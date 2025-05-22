@@ -118,7 +118,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+  //__enable_irq();
   /* USER CODE END 1 */
 
   /* MPU Configuration--------------------------------------------------------*/
@@ -160,12 +160,14 @@ int main(void)
   FDCAN_Config();
 
   HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
+
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  //LED_Blink(100,100);
+	  LED_Blink(100,100);
+
 	  // HAL_ADC_Start(&hadc1);
 	  HAL_Delay(100);
 
